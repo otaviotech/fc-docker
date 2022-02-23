@@ -1,0 +1,50 @@
+version: '3'
+services:
+  fc-node:
+    container_name: fc-node
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    command: sh -c 'npm run db:migrate && npm run dev'
+    volumes:
+      - ./node:/app
+      - /app/node_modules
+    environment:
+      - PORT=3000
+      - PG_URL=postgres://fc:fc@fc-pg:5432/fc
+      - NODE_ENV=development
+    networks:
+      - fc
+    depends_on:
+      - fc-pg
+
+  fc-pg:
+    container_name: fc-pg
+    image: postgres
+    volumes:
+      - fc-pg:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=fc
+      - POSTGRES_PASSWORD=fc
+      - POSTGRES_DB=fc
+    networks:
+      - fc
+
+  fc-nginx:
+    container_name: fc-nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      - fc-node
+    networks:
+      - fc
+
+volumes:
+  fc-pg:
+
+networks:
+  fc:
+    driver: bridge
